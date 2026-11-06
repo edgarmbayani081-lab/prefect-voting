@@ -1,0 +1,55 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Administrator | Maranatha Girls Academy</title>
+<meta name="theme-color" content="#0b1f4b">
+<meta name="robots" content="noindex">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar"><div class="in">
+  <a class="brand" href="index.html"><span class="crest">M</span><span><b>MARANATHA GIRLS ACADEMY</b><small>ELECTION ADMINISTRATION</small></span></a>
+  <nav><a href="index.html">Home</a><span id="adminEmail" class="hint" style="color:var(--gold-l)"></span><button id="logoutBtn" hidden>Log out</button></nav>
+</div></header>
+
+<main class="container">
+  <div id="cfgWarn" class="alert warn" hidden>This copy is not connected to Firebase yet. See README section 3.</div>
+
+  <section id="loginView" class="card narrow">
+    <h3>Administrator Login</h3>
+    <form id="loginForm">
+      <label for="email">Email</label><input id="email" type="email" autocomplete="username" required>
+      <label for="pw">Password</label><input id="pw" type="password" autocomplete="current-password" required>
+      <div id="loginErr" class="alert bad" hidden></div>
+      <button class="btn btn-navy btn-block" id="loginBtn" style="margin-top:16px">Log in</button>
+    </form>
+  </section>
+
+  <section id="dash" hidden>
+    <div class="tabs" id="tabs">
+      <button data-tab="overview" class="on">Overview</button>
+      <button data-tab="voters">Voters</button>
+      <button data-tab="candidates">Candidates</button>
+      <button data-tab="settings">Election</button>
+      <button data-tab="results">Results</button>
+      <button data-tab="audit">Audit log</button>
+    </div>
+    <div id="tab-overview"></div>
+    <div id="tab-voters" hidden></div>
+    <div id="tab-candidates" hidden></div>
+    <div id="tab-settings" hidden></div>
+    <div id="tab-results" hidden></div>
+    <div id="tab-audit" hidden></div>
+  </section>
+</main>
+
+<div class="modal" id="modal" hidden><div class="box" id="modalBox"></div></div>
+
+<script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf@2.5.1/dist/jspdf.umd.min.js"></script>
+<script src="https://cdn.jsdelivr.net/npm/jspdf-autotable@3.8.2/dist/jspdf.plugin.autotable.min.js"></script>
+<script type="module" src="js/admin.js"></script>
+</body>
+</html>

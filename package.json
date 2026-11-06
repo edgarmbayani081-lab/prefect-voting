@@ -1,0 +1,1 @@
+{ "name": "maranatha-prefect-voting", "private": true, "type": "module", "scripts": { "test": "node tests/tally.test.mjs" } }

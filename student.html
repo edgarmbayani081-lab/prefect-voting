@@ -1,0 +1,78 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Student Portal | Maranatha Girls Academy</title>
+<meta name="theme-color" content="#0b1f4b">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar"><div class="in">
+  <a class="brand" href="index.html"><span class="crest">M</span><span><b>MARANATHA GIRLS ACADEMY</b><small>ONLINE PREFECT ELECTION SYSTEM</small></span></a>
+  <nav><a href="index.html">Home</a><button id="logoutBtn" hidden>Log out</button></nav>
+</div></header>
+
+<main class="container">
+  <div id="cfgWarn" class="alert warn" hidden>This copy is not connected to Firebase yet. See README section 3.</div>
+
+  <!-- LOGIN -->
+  <section id="loginView" class="card narrow">
+    <h3>Student Login</h3>
+    <p class="hint">Use the Voter Code and password printed on your voting slip.</p>
+    <form id="loginForm" autocomplete="off">
+      <label for="code">Voter Code</label>
+      <input id="code" type="text" placeholder="e.g. MGA-K7Q2X" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
+      <label for="pw">Password</label>
+      <input id="pw" type="password" autocomplete="current-password" required>
+      <div id="loginErr" class="alert bad" hidden></div>
+      <button class="btn btn-gold btn-block" id="loginBtn" style="margin-top:16px">Log in</button>
+    </form>
+  </section>
+
+  <!-- PORTAL -->
+  <section id="portalView" hidden>
+    <div class="row" style="margin-bottom:10px">
+      <div><h2 style="margin:0;font-family:Georgia,serif;color:var(--navy)" id="hello"></h2><span class="hint" id="whoMeta"></span></div>
+      <span class="sp"></span><span id="statusBadge" class="badge muted"></span>
+    </div>
+    <div id="banner"></div>
+    <div id="votingArea" hidden>
+      <div class="progress-wrap">
+        <div class="row"><b id="progText"></b><span class="sp"></span><span class="hint">Gold = chosen, not yet submitted &middot; Green = submitted</span></div>
+        <div class="pbar" style="margin-top:8px"><div class="done" id="pDone"></div><div class="sel" id="pSel"></div></div>
+        <div class="hint" id="outstanding" style="margin-top:6px"></div>
+      </div>
+      <div id="positions"></div>
+    </div>
+    <div id="resultsArea" hidden></div>
+  </section>
+
+  <!-- DONE -->
+  <section id="doneView" class="card done-box" hidden>
+    <div class="tick">&#10003;</div>
+    <h2 style="font-family:Georgia,serif;color:var(--navy);margin:0 0 6px">Thank you &mdash; your votes have been recorded</h2>
+    <p>Your ballot was submitted successfully. Votes are final and cannot be changed.</p>
+    <p class="hint">Reference: <span class="mono" id="receipt"></span></p>
+    <p><button class="btn btn-navy" id="doneLogout">Log out</button></p>
+  </section>
+</main>
+
+<div class="sticky-bar" id="submitBar" hidden><div class="in">
+  <span id="barText" class="hint"></span>
+  <button class="btn btn-gold" id="reviewBtn" disabled>Review &amp; Submit</button>
+</div></div>
+
+<div class="modal" id="modal" hidden><div class="box">
+  <h3>Confirm your votes</h3>
+  <p class="hint">Check your choices carefully. Once submitted they <b>cannot be changed</b>.</p>
+  <div id="reviewList"></div>
+  <label style="display:flex;gap:10px;align-items:flex-start;font-weight:500;margin-top:14px"><input type="checkbox" id="sure" style="width:20px;height:20px;margin-top:2px"> <span>I confirm these are my choices and I understand they are final.</span></label>
+  <div id="submitErr" class="alert bad" hidden></div>
+  <div class="row" style="margin-top:16px"><button class="btn btn-out" id="backBtn">Go back</button><span class="sp"></span><button class="btn btn-gold" id="submitBtn" disabled>Submit my votes</button></div>
+</div></div>
+
+<footer class="site">Your Voice, Your Choice, Your Leadership.</footer>
+<script type="module" src="js/student.js"></script>
+</body>
+</html>

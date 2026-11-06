@@ -1,0 +1,150 @@
+rules_version = '2';
+
+// MARANATHA GIRLS ACADEMY – PREFECT ELECTION
+// Publish in: Firebase console > Firestore Database > Rules.
+//
+// Data model (see README section 5):
+//   admins/{uid}              administrators (created by hand in the console only)
+//   settings/election         status: setup | open | closed, Dining config, publishResults
+//   candidates/{positionId}   { positionId, items:[{id,name,manifesto,photo}] }
+//   voters/{uid}              { name, studentId, form, voterCode, active, voted:{positionId:true} }
+//   ballots/{autoId}          { votes:{positionId:[candidateId,...]} }   <- NO voter identity
+//   results/final             snapshot written by the admin when the election is closed
+//   audit/{autoId}            append-only administrator action log
+
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // ---------- helpers ----------
+    function signedIn() { return request.auth != null; }
+    function isAdmin() {
+      return signedIn() && exists(/databases/$(database)/documents/admins/$(request.auth.uid));
+    }
+    function election() { return get(/databases/$(database)/documents/settings/election).data; }
+    function status() { return election().status; }
+    function positionIds() {
+      return ['head','vice','health','sanitation','dining','tuckshop','entertainment','library','english','dormitory'];
+    }
+
+    // ---------- admins ----------
+    match /admins/{uid} {
+      allow read: if signedIn() && request.auth.uid == uid;
+      allow write: if false;                       // add administrators in the console
+    }
+
+    // ---------- settings ----------
+    function settingsUpdateOk() {
+      let o = resource.data;
+      let n = request.resource.data;
+      return n.status in ['setup', 'open', 'closed']
+        && (o.status == n.status
+            || (o.status == 'setup'  && n.status == 'open')
+            || (o.status == 'open'   && n.status == 'closed')
+            || (o.status == 'closed' && n.status == 'setup'))     // closed -> setup = reset after a test
+        && (o.status == 'setup' || n.positions == o.positions);    // Dining config frozen once opened
+    }
+    match /settings/election {
+      allow read: if true;                         // status only; shown on the public home page
+      allow create: if isAdmin() && request.resource.data.status == 'setup';
+      allow update: if isAdmin() && settingsUpdateOk();
+      allow delete: if false;
+    }
+
+    // ---------- candidates ----------
+    match /candidates/{positionId} {
+      allow read: if signedIn();
+      allow create, update: if isAdmin() && status() == 'setup'
+        && positionId in positionIds()
+        && request.resource.data.keys().hasOnly(['positionId', 'items'])
+        && request.resource.data.positionId == positionId
+        && request.resource.data.items is list
+        && request.resource.data.items.size() <= 40;
+      allow delete: if isAdmin() && status() == 'setup';
+    }
+
+    // ---------- voters (identity + "has voted" flags; never the choices) ----------
+    function voterShapeOk() {
+      let d = request.resource.data;
+      return d.keys().hasOnly(['name', 'studentId', 'form', 'voterCode', 'active', 'voted', 'createdAt'])
+        && d.name is string && d.studentId is string && d.active == true
+        && d.voted is map && d.voted.keys().hasOnly(positionIds());
+    }
+    function adminVoterUpdateOk() {
+      let changed = request.resource.data.diff(resource.data).affectedKeys();
+      return changed.hasOnly(['name', 'studentId', 'form', 'active', 'voted'])
+        && (status() == 'setup' || !changed.hasAny(['voted']));   // flags can be cleared only in Setup (test reset)
+    }
+    function selfVoteUpdateOk() {
+      let o = resource.data;
+      let n = request.resource.data;
+      let vd = n.voted.diff(o.voted);
+      return o.active == true
+        && status() == 'open'
+        && n.diff(o).affectedKeys().hasOnly(['voted'])
+        && n.voted.keys().hasOnly(positionIds())
+        && vd.removedKeys().size() == 0                // a flag can never be removed
+        && vd.changedKeys().size() == 0                // an existing flag can never be rewritten
+        && vd.addedKeys().size() >= 1;
+    }
+    match /voters/{uid} {
+      allow read: if isAdmin() || (signedIn() && request.auth.uid == uid);
+      allow create: if isAdmin() && status() in ['setup', 'open'] && voterShapeOk();
+      allow update: if (isAdmin() && adminVoterUpdateOk())
+                    || (signedIn() && request.auth.uid == uid && selfVoteUpdateOk());
+      allow delete: if false;
+    }
+
+    // ---------- ballots (anonymous) ----------
+    // A ballot may be created only in the SAME batch that adds the matching "voted" flags to the
+    // caller's own voter record. getAfter() sees the state after the batch, get() the state before.
+    function votesShapeOk(v, e) {
+      return v.size() >= 1
+        && v.keys().hasOnly(positionIds())
+        && (!('head' in v)          || (v.head is list          && v.head.size() <= 1))
+        && (!('vice' in v)          || (v.vice is list          && v.vice.size() <= 1))
+        && (!('health' in v)        || (v.health is list        && v.health.size() <= 1))
+        && (!('sanitation' in v)    || (v.sanitation is list    && v.sanitation.size() <= 1))
+        && (!('dining' in v)        || (v.dining is list        && v.dining.size() <= int(e.positions.dining.maxSelect)))
+        && (!('tuckshop' in v)      || (v.tuckshop is list      && v.tuckshop.size() <= 1))
+        && (!('entertainment' in v) || (v.entertainment is list && v.entertainment.size() <= 1))
+        && (!('library' in v)       || (v.library is list       && v.library.size() <= 1))
+        && (!('english' in v)       || (v.english is list       && v.english.size() <= 1))
+        && (!('dormitory' in v)     || (v.dormitory is list     && v.dormitory.size() <= 1));
+    }
+    function ballotCreateOk() {
+      let me = /databases/$(database)/documents/voters/$(request.auth.uid);
+      let before = get(me).data;
+      let after = getAfter(me).data;
+      let b = request.resource.data;
+      return signedIn()
+        && b.keys().hasOnly(['votes'])
+        && b.votes is map
+        && status() == 'open'
+        && before.active == true
+        && after.voted.keys().toSet().hasAll(before.voted.keys().toSet())
+        // the ballot's positions must be exactly the positions newly flagged as voted
+        && b.votes.keys().toSet() == after.voted.keys().toSet().difference(before.voted.keys().toSet())
+        && votesShapeOk(b.votes, election());
+    }
+    match /ballots/{ballotId} {
+      allow read: if isAdmin();
+      allow create: if ballotCreateOk();
+      allow update: if false;                      // ballots are immutable
+      allow delete: if isAdmin() && status() == 'setup';   // only for wiping a test election
+    }
+
+    // ---------- results snapshot ----------
+    match /results/{docId} {
+      allow read: if isAdmin() || (status() == 'closed' && election().publishResults == true);
+      allow create, update: if isAdmin() && status() == 'closed';
+      allow delete: if isAdmin() && status() == 'setup';
+    }
+
+    // ---------- audit log ----------
+    match /audit/{id} {
+      allow read: if isAdmin();
+      allow create: if isAdmin();
+      allow update, delete: if false;
+    }
+  }
+}
