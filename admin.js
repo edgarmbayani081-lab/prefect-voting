@@ -170,7 +170,12 @@ async function createVoter(info, voted = {}) {
   let cred;
   for (;;) {
     try { cred = await createUserWithEmailAndPassword(ra, codeToEmail(code), pw); break; }
-    catch (ex) { if (ex.code === "auth/email-already-in-use" && n < 300) { code = base + ++n; continue; } throw ex; }
+    catch (ex) {
+      if (ex.code !== "auth/email-already-in-use" || n >= 300) throw ex;
+      // The code belongs to an account whose voter record was deleted: reuse it if the class password matches.
+      try { cred = await signInWithEmailAndPassword(ra, codeToEmail(code), pw); break; }
+      catch { code = base + ++n; }
+    }
   }
   madeCodes.add(normCode(code));
   const uid = cred.user.uid;
@@ -211,17 +216,16 @@ function renderVoters() {
         <label>Form / class (optional)</label><input type="text" id="vForm">
         <button class="btn btn-navy" id="vAdd" style="margin-top:14px" ${canAdd ? "" : "disabled"}>Register &amp; create login</button>
       </div>
-      <div class="card"><h3>Import a student list</h3>
-        <p class="hint"><b>Excel marksheet (.xlsx / .xls)</b>, CSV, or paste below. Columns are found by their headings (Name, ID / Admission No., Class / Form); each sheet can be a class. The list appears below for checking before you import. Existing students are skipped.</p>
-        <input type="file" id="vFile" accept=".xlsx,.xls,.csv,.txt,text/csv,text/plain">
-        <textarea id="vPaste" placeholder="Mary Banda, MGA001, Form 4A&#10;Grace Phiri, MGA002, Form 3B"></textarea>
-        <button class="btn btn-navy" id="vImport" ${canAdd ? "" : "disabled"}>Import &amp; create logins</button>
+      <div class="card"><h3>Import from Excel</h3>
+        <p class="hint">Choose your Excel marksheet (.xlsx / .xls). The names are taken straight from the sheet: it looks for a column headed <b>Name</b> (and optionally Admission No. and Class / Form). Every sheet in the file is read, so one sheet per class works. Students already registered are skipped.</p>
+        <input type="file" id="vFile" accept=".xlsx,.xls,.csv" ${canAdd ? "" : "disabled"}>
         <div id="vProg" class="hint"></div>
       </div>
     </div>
     <div id="credBox"></div>
     <div class="card" style="margin-top:16px">
       <div class="row"><h3 style="margin:0">Registered voters (${S.voters.length})</h3><span class="sp"></span>
+        ${status() === "setup" && S.voters.length ? `<button class="btn btn-out btn-sm" id="vDelAll" style="color:var(--bad,#c0392b)">Delete ALL voters</button>` : ""}
         <input type="text" id="vSearch" placeholder="Search name, ID, code…" value="${esc(S.filter)}" style="max-width:260px"></div>
       <div class="tbl-wrap" style="margin-top:10px"><table>
         <thead><tr><th>Name</th><th>Student ID</th><th>Form</th><th>Voter code</th><th class="num">Voted</th><th>Status</th><th></th></tr></thead>
@@ -230,7 +234,8 @@ function renderVoters() {
           <td class="num">${Object.keys(v.voted || {}).length}/${POSITIONS.length}</td>
           <td>${v.active === false ? '<span class="badge muted">inactive</span>' : '<span class="badge open">active</span>'}</td>
           <td style="white-space:nowrap">${v.active === false ? "" : `<button class="btn btn-out btn-sm" data-reissue="${v.uid}" ${canAdd ? "" : "disabled"}>New credentials</button>
-            <button class="btn btn-out btn-sm" data-deact="${v.uid}">Deactivate</button>`}</td></tr>`).join("") || `<tr><td colspan="7" class="hint">No voters yet.</td></tr>`}</tbody>
+            <button class="btn btn-out btn-sm" data-deact="${v.uid}">Deactivate</button>`}
+            ${status() === "setup" ? `<button class="btn btn-out btn-sm" data-del="${v.uid}" style="color:var(--bad,#c0392b)">Delete</button>` : ""}</td></tr>`).join("") || `<tr><td colspan="7" class="hint">No voters yet.</td></tr>`}</tbody>
       </table></div>
       ${rows.length > 300 ? `<p class="hint">Showing the first 300 of ${rows.length}. Use search.</p>` : ""}
     </div>`;
@@ -252,25 +257,43 @@ function renderVoters() {
   $("#vFile").onchange = async (e) => {
     const f0 = e.target.files[0];
     if (!f0) return;
+    let list;
     try {
-      if (/\.xlsx?$/i.test(f0.name)) {
-        const list = parseExcel(await f0.arrayBuffer());
-        $("#vPaste").value = list.map((s) => `${s.name}, ${s.studentId}, ${s.form}`).join("\n");
-        $("#vProg").textContent = list.length ? `Found ${list.length} student(s) in ${f0.name}. Check the list, then press Import.` : "No students found. Check that the sheet has a column headed Name.";
-      } else $("#vPaste").value = await f0.text();
-    } catch (ex) { toast("Could not read the file: " + ex.message, "error"); }
-  };
-  $("#vImport").onclick = async () => {
-    const list = parseStudentList($("#vPaste").value);
-    if (!list.length) return toast("No valid lines found. Use: Full name, Student ID, Form", "error");
-    if (!(await confirmDialog("Import students", `<p>Create voter accounts for <b>${list.length}</b> student(s)? Credentials are shown once afterwards, so be ready to save or print them.</p>`, { okLabel: "Import" }))) return;
-    $("#vImport").disabled = true;
+      list = /\.xlsx?$/i.test(f0.name) ? parseExcel(await f0.arrayBuffer()) : parseStudentList(await f0.text());
+    } catch (ex) { e.target.value = ""; return toast("Could not read the file: " + ex.message, "error"); }
+    if (!list.length) { e.target.value = ""; return toast("No students found. Check that the sheet has a column headed Name.", "error"); }
+    const sample = list.slice(0, 5).map((s) => esc(s.name) + (s.form ? ` (${esc(s.form)})` : "")).join(", ");
+    if (!(await confirmDialog("Import students", `<p>Found <b>${list.length}</b> student(s) in <b>${esc(f0.name)}</b>, for example: ${sample}${list.length > 5 ? "…" : ""}.</p><p>Create their logins now?</p>`, { okLabel: "Import" }))) { e.target.value = ""; return; }
+    $("#vFile").disabled = true;
     const r = await registerMany(list, (i, n) => ($("#vProg").textContent = `Creating accounts… ${i} / ${n}`));
     S.creds = r.made;
     await audit("import-voters", { created: r.made.length, skipped: r.skipped.length, failed: r.failed.length });
     await loadAll(); renderVoters();
     toast(`Created ${r.made.length}, skipped ${r.skipped.length}, failed ${r.failed.length}.`, r.failed.length ? "error" : "ok");
     if (r.failed.length) alert("Some rows failed:\n" + r.failed.map((f) => `${f.name} (${f.studentId}): ${f.error}`).join("\n"));
+  };
+  host.querySelectorAll("[data-del]").forEach((b) => (b.onclick = async () => {
+    const v = S.voters.find((x) => x.uid === b.dataset.del);
+    if (!(await confirmDialog("Delete voter", `<p>Permanently delete <b>${esc(v.name)}</b> (${esc(v.voterCode)})? This cannot be undone.</p>`, { bad: true, okLabel: "Delete" }))) return;
+    try {
+      await deleteDoc(doc(db, "voters", v.uid));
+      madeCodes.delete(normCode(v.voterCode));
+      await audit("delete-voter", { studentId: v.studentId });
+      await loadAll(); renderVoters(); toast("Voter deleted.", "ok");
+    } catch (ex) { toast("Failed: " + (ex.code || ex.message), "error"); }
+  }));
+  if ($("#vDelAll")) $("#vDelAll").onclick = async () => {
+    if (!(await confirmDialog("Delete ALL voters?", `<p>This permanently removes all <b>${S.voters.length}</b> registered voters so you can import a fresh list. Candidates are not affected.</p>`, { typed: "DELETE", bad: true, okLabel: "Delete all voters" }))) return;
+    try {
+      for (let i = 0; i < S.voters.length; i += 400) {
+        const b = writeBatch(db);
+        S.voters.slice(i, i + 400).forEach((v) => b.delete(doc(db, "voters", v.uid)));
+        await b.commit();
+      }
+      madeCodes.clear(); S.creds = [];
+      await audit("delete-all-voters", { count: S.voters.length });
+      await loadAll(); renderVoters(); toast("All voters deleted.", "ok");
+    } catch (ex) { toast("Failed: " + (ex.code || ex.message), "error"); }
   };
   host.querySelectorAll("[data-deact]").forEach((b) => (b.onclick = async () => {
     const v = S.voters.find((x) => x.uid === b.dataset.deact);
