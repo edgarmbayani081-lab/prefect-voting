@@ -1,4 +1,4 @@
-// Fixed list of the ten voting categories. IDs are also hard-coded in firestore.rules.
+// Fixed list of the fourteen voting categories. IDs are also hard-coded in firestore.rules.
 export const POSITIONS = [
   { id: "head",          title: "HEAD GIRL" },
   { id: "vice",          title: "VICE HEAD GIRL" },
@@ -10,6 +10,10 @@ export const POSITIONS = [
   { id: "library",       title: "LIBRARY PREFECT" },
   { id: "english",       title: "ENGLISH PREFECT" },
   { id: "dormitory",     title: "DORMITORY PREFECT" },
+  { id: "chapel",        title: "CHAPEL PREFECT" },
+  { id: "maintenance",   title: "MAINTENANCE PREFECT" },
+  { id: "timekeeper",    title: "TIMEKEEPER PREFECT" },
+  { id: "studycircles",  title: "STUDY CIRCLES PREFECT" },
 ];
 
 // Student accounts are Firebase Auth email/password users whose "email" is
