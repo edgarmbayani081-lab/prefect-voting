@@ -16,17 +16,17 @@
 <main class="container">
   <div id="cfgWarn" class="alert warn" hidden>This copy is not connected to Firebase yet. See README section 3.</div>
 
-  <!-- LOGIN -->
+  <!-- LOGIN (name only: voting is supervised) -->
   <section id="loginView" class="card narrow">
     <h3>Student Login</h3>
-    <p class="hint">Type your Voter Code (your short name, e.g. E.MBAYANI) and your class (e.g. F3).</p>
+    <p class="hint">Type your name exactly as it appears on the school register, then your class. Your supervisor is present while you vote.</p>
     <form id="loginForm" autocomplete="off">
-      <label for="code">Voter Code</label>
-      <input id="code" type="text" placeholder="e.g. E.MBAYANI" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
-      <label for="pw">Class</label>
-      <input id="pw" type="text" placeholder="e.g. F3" autocapitalize="characters" autocorrect="off" spellcheck="false" autocomplete="off" required>
+      <label for="studentName">Your name</label>
+      <input id="studentName" type="text" placeholder="e.g. E.SAMUEL" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
+      <label for="studentClass">Your class</label>
+      <input id="studentClass" type="text" placeholder="e.g. FORM 2" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
       <div id="loginErr" class="alert bad" hidden></div>
-      <button class="btn btn-gold btn-block" id="loginBtn" style="margin-top:16px">Log in</button>
+      <button class="btn btn-gold btn-block" id="loginBtn" style="margin-top:16px">Continue</button>
     </form>
   </section>
 

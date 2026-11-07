@@ -228,7 +228,7 @@ function renderVoters() {
         ${status() === "setup" && S.voters.length ? `<button class="btn btn-out btn-sm" id="vDelAll" style="color:var(--bad,#c0392b)">Delete ALL voters</button>` : ""}
         <input type="text" id="vSearch" placeholder="Search name, ID, code…" value="${esc(S.filter)}" style="max-width:260px"></div>
       <div class="tbl-wrap" style="margin-top:10px"><table>
-        <thead><tr><th>Name</th><th>Student ID</th><th>Form</th><th>Voter code</th><th class="num">Voted</th><th>Status</th><th></th></tr></thead>
+        <thead><tr><th>Name</th><th>Student ID</th><th>Form</th><th>Login name</th><th class="num">Voted</th><th>Status</th><th></th></tr></thead>
         <tbody>${rows.slice(0, 300).map((v) => `<tr>
           <td>${esc(v.name)}</td><td>${esc(v.studentId)}</td><td>${esc(v.form)}</td><td class="mono">${esc(v.voterCode)}</td>
           <td class="num">${Object.keys(v.voted || {}).length}/${POSITIONS.length}</td>
@@ -303,7 +303,7 @@ function renderVoters() {
   }));
   host.querySelectorAll("[data-reissue]").forEach((b) => (b.onclick = async () => {
     const v = S.voters.find((x) => x.uid === b.dataset.reissue);
-    if (!(await confirmDialog("Issue new credentials", `<p>Create a new Voter Code and password for <b>${esc(v.name)}</b>? The old login stops working. Positions she has already voted for stay locked.</p>`, { okLabel: "Issue new login" }))) return;
+    if (!(await confirmDialog("Issue new credentials", `<p>Create a new login name for <b>${esc(v.name)}</b>? The old login stops working. Positions she has already voted for stay locked.</p>`, { okLabel: "Issue new login" }))) return;
     try {
       const c = await createVoter({ name: v.name, studentId: v.studentId, form: v.form }, { ...(v.voted || {}) });
       await updateDoc(doc(db, "voters", v.uid), { active: false });
@@ -318,21 +318,21 @@ function renderCreds() {
   if (!box) return;
   if (!S.creds.length) { box.innerHTML = ""; return; }
   box.innerHTML = `<div class="card" style="margin-top:16px;border-top:5px solid var(--gold)"><h3>New voter credentials (${S.creds.length})</h3>
-    <div class="alert warn"><b>Voting is in the lab:</b> each student logs in with her Voter Code and her class. Print this list for the teacher supervising.</div>
-    <div class="row"><button class="btn btn-navy btn-sm" id="credCsv">Download CSV</button><button class="btn btn-gold btn-sm" id="credPrint">Print voting slips</button><button class="btn btn-out btn-sm" id="credClear">I have saved them – hide</button></div>
-    <div class="tbl-wrap" style="margin-top:10px;max-height:260px;overflow:auto"><table><thead><tr><th>Name</th><th>ID</th><th>Form</th><th>Voter code</th><th>Class to type</th></tr></thead>
+    <div class="alert warn"><b>Voting is in the lab:</b> each student logs in with her name (shown below) and her class. Print this list for the teacher supervising.</div>
+    <div class="row"><button class="btn btn-navy btn-sm" id="credCsv">Download CSV</button><button class="btn btn-gold btn-sm" id="credPrint">Print login list</button><button class="btn btn-out btn-sm" id="credClear">I have saved them – hide</button></div>
+    <div class="tbl-wrap" style="margin-top:10px;max-height:260px;overflow:auto"><table><thead><tr><th>Name</th><th>ID</th><th>Form</th><th>Name to type</th><th>Class to type</th></tr></thead>
     <tbody>${S.creds.map((c) => `<tr><td>${esc(c.name)}</td><td>${esc(c.studentId)}</td><td>${esc(c.form)}</td><td class="mono">${esc(c.code)}</td><td class="mono">${esc(c.form || "MGA")}</td></tr>`).join("")}</tbody></table></div></div>`;
-  $("#credCsv").onclick = () => download("voter-credentials.csv", toCSV([["Name", "StudentID", "Form", "VoterCode"], ...S.creds.map((c) => [c.name, c.studentId, c.form, c.code])]));
+  $("#credCsv").onclick = () => download("student-logins.csv", toCSV([["Name", "StudentID", "Form", "LoginName"], ...S.creds.map((c) => [c.name, c.studentId, c.form, c.code])]));
   $("#credClear").onclick = () => { S.creds = []; renderCreds(); };
   $("#credPrint").onclick = () => {
     const url = location.href.replace(/admin\.html.*$/, "student.html");
     const w = window.open("", "_blank");
-    if (!w) return toast("Allow pop-ups to print slips.", "error");
-    w.document.write(`<html><head><title>Voting slips</title><style>
+    if (!w) return toast("Allow pop-ups to print the login list.", "error");
+    w.document.write(`<html><head><title>Student logins</title><style>
       body{font-family:Arial,sans-serif;margin:12px}.s{display:inline-block;width:46%;margin:1.5%;padding:12px;border:2px solid #0b1f4b;border-radius:10px;vertical-align:top;page-break-inside:avoid}
       h4{margin:0;color:#0b1f4b}.g{color:#9a7b12;font-size:11px;letter-spacing:.1em}.c{font:bold 18px Consolas,monospace;letter-spacing:.06em}small{color:#555}</style></head><body>` +
-      S.creds.map((c) => `<div class="s"><h4>MARANATHA GIRLS ACADEMY</h4><div class="g">PREFECT ELECTION – VOTING SLIP</div><p><b>${esc(c.name)}</b><br><small>${esc(c.form)} · ID ${esc(c.studentId)}</small></p>
-      <p>Voter Code<br><span class="c">${esc(c.code)}</span></p><small>Vote at: ${esc(url)}<br>Keep this slip private. Votes are final.</small></div>`).join("") +
+      S.creds.map((c) => `<div class="s"><h4>MARANATHA GIRLS ACADEMY</h4><div class="g">PREFECT ELECTION – LOGIN</div><p><b>${esc(c.name)}</b><br><small>${esc(c.form)} · ID ${esc(c.studentId)}</small></p>
+      <p>Name to type<br><span class="c">${esc(c.code)}</span></p><p>Class to type<br><span class="c">${esc(c.form)}</span></p><small>Vote at: ${esc(url)}<br>Vote only under supervision. Votes are final.</small></div>`).join("") +
       `</body></html>`);
     w.document.close(); w.focus(); setTimeout(() => w.print(), 400);
   };
