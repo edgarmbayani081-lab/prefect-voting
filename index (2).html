@@ -1,0 +1,69 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Maranatha Girls Academy | Online Prefect Election System</title>
+<meta name="theme-color" content="#0b1f4b">
+<link rel="stylesheet" href="css/style.css">
+</head>
+<body>
+<header class="topbar"><div class="in">
+  <a class="brand" href="index.html"><img src="logo.png" alt="Maranatha Girls Academy" style="height:56px;width:auto;display:block"><span><b>MARANATHA GIRLS ACADEMY</b><small>ONLINE PREFECT ELECTION SYSTEM</small></span></a>
+  <nav><a href="student.html">Student Login</a><a href="admin.html">Administrator</a></nav>
+</div></header>
+
+<section class="hero">
+  <img src="logo.png" alt="Maranatha Girls Academy" style="height:210px;width:auto;display:block;margin:0 auto 10px">
+  <h1>MARANATHA GIRLS ACADEMY</h1>
+  <h2>ONLINE PREFECT ELECTION SYSTEM</h2>
+  <div class="rule"></div>
+  <p class="motto">&ldquo;Your Voice, Your Choice, Your Leadership.&rdquo;</p>
+  <p style="max-width:640px;margin:14px auto 0;opacity:.95">Welcome! This is where every registered student of Maranatha Girls Academy chooses her prefects. Every vote is confidential, every voter counts, and every vote is final.</p>
+  <p style="margin-top:20px"><span id="statusBadge" class="badge muted">Checking&hellip;</span></p>
+  <p id="statusText" style="margin:6px 0 0;color:var(--gold-l)"></p>
+</section>
+
+<main class="container">
+  <div id="cfgWarn" class="alert warn" hidden><b>Setup needed:</b> this copy is not yet connected to Firebase. Open <code>js/firebase-config.js</code> and paste your Firebase web-app settings (see README, section 3).</div>
+
+  <div class="grid g2">
+    <div class="card portal-card">
+      <h3>Student Portal</h3>
+      <p>Type your full name to view candidates, read manifestos and cast your votes. A supervisor will be with you while you vote.</p>
+      <a class="btn btn-gold" href="student.html">Student Login</a>
+    </div>
+    <div class="card portal-card">
+      <h3>Administrator</h3>
+      <p>Election officials: manage voters and candidates, open and close the election, monitor turnout and download reports.</p>
+      <a class="btn btn-navy" href="admin.html">Administrator Login</a>
+    </div>
+  </div>
+
+  <div class="grid g2" style="margin-top:16px">
+    <div class="card">
+      <h3>How to vote</h3>
+      <ol class="steps">
+        <li>Open <b>Student Login</b> and type your <b>full name</b> as it appears on the school register.</li>
+        <li>Read each candidate&rsquo;s profile and manifesto.</li>
+        <li>For each of the fourteen positions, press <b>Vote</b> on your choice (or choose <b>Abstain</b>). For Dining Prefects you may choose up to the number shown.</li>
+        <li>Press <b>Review &amp; Submit</b>, check your choices, confirm, and submit.</li>
+        <li>You will see a confirmation. <b>Votes cannot be changed after submission.</b></li>
+      </ol>
+    </div>
+    <div class="card">
+      <h3>Voting rules</h3>
+      <ol class="steps">
+        <li>Vote only under supervision, and only in your own name.</li>
+        <li>You may vote only once for each position.</li>
+        <li>Your choices are stored separately from your name &mdash; administrators see turnout, never who you voted for.</li>
+        <li>Results are not shown to students while voting is open.</li>
+        <li>Name not found? Ask the election officer to check the register.</li>
+      </ol>
+    </div>
+  </div>
+</main>
+<footer class="site">&copy; Maranatha Girls Academy &middot; Your Voice, Your Choice, Your Leadership.</footer>
+<script type="module" src="js/home.js"></script>
+</body>
+</html>
