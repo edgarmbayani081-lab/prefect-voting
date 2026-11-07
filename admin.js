@@ -516,7 +516,8 @@ async function renderResults() {
         <div class="res-meta"><span>Valid votes: <b>${p.validVotes}</b></span><span>Abstentions: <b>${p.abstentions}</b></span><span>Invalid: <b>${p.invalid}</b></span><span>Voters who voted here: <b>${p.votersVoted}</b></span></div>
         <div class="chart">${p.candidates.map((c) => {
           const win = p.winners.some((w) => w.id === c.id), tie = p.tied.some((x) => x.id === c.id);
-          return `<div class="crow ${win ? "win" : ""}"><span>${esc(c.name)}${win ? `<span class="chip win">${final ? "WINNER" : "LEADING"}</span>` : ""}${tie ? `<span class="chip tie">TIED</span>` : ""}</span>
+          const bike = final && !win && !tie && p.status !== "no-votes" ? "\u{1F6B2} " : "";
+          return `<div class="crow ${win ? "win" : ""}"><span>${bike}${esc(c.name)}${win ? `<span class="chip win">${final ? "WINNER" : "LEADING"}</span>` : ""}${tie ? `<span class="chip tie">TIED</span>` : ""}</span>
             <div class="track"><div class="fill" style="width:${(c.votes / max) * 100}%"></div></div><span class="v"><b>${c.votes}</b> · ${c.pct}%</span></div>`;
         }).join("") || `<p class="hint">No candidates.</p>`}</div>
         ${p.status === "tie" ? `<div class="alert warn">Tie for ${p.slots} seat${p.slots > 1 ? "s" : ""} between: ${p.tied.map((c) => esc(c.name)).join(", ")}. ${p.winners.length ? "Already elected: " + p.winners.map((c) => esc(c.name)).join(", ") + "." : ""} The school must decide how to resolve it (for example, a run-off).</div>` : ""}
@@ -566,7 +567,7 @@ function printResults(rep) {
     <div class="tot"><div><b>${r.totals.eligible}</b>Registered voters</div><div><b>${r.totals.votedAny}</b>Voted</div><div><b>${r.totals.turnoutPct}%</b>Turnout</div><div><b>${r.totals.ballots}</b>Ballots counted</div></div>
     ${r.positions.map((p) => `<div class="p"><h3>${esc(p.title)}${p.seats > 1 ? ` (${p.seats} seats)` : ""}</h3>
       <table><thead><tr><th>Candidate</th><th class="n">Votes</th><th class="n">%</th></tr></thead><tbody>
-      ${p.candidates.map((c) => `<tr class="${p.winners.some((x) => x.id === c.id) ? "w" : ""}"><td>${esc(c.name)}${p.winners.some((x) => x.id === c.id) ? " &#9733;" : ""}</td><td class="n">${c.votes}</td><td class="n">${c.pct}%</td></tr>`).join("") || `<tr><td colspan="3">No candidates</td></tr>`}
+      ${p.candidates.map((c) => `<tr class="${p.winners.some((x) => x.id === c.id) ? "w" : ""}"><td>${rep.statusLabel === "FINAL" && p.status !== "no-votes" && !p.winners.some((x) => x.id === c.id) && !p.tied.some((x) => x.id === c.id) ? "\u{1F6B2} " : ""}${esc(c.name)}${p.winners.some((x) => x.id === c.id) ? " &#9733;" : ""}</td><td class="n">${c.votes}</td><td class="n">${c.pct}%</td></tr>`).join("") || `<tr><td colspan="3">No candidates</td></tr>`}
       </tbody></table><div class="o"><b>${outcome(p)}</b> &nbsp; <small>Valid: ${p.validVotes} &middot; Abstentions: ${p.abstentions} &middot; Invalid: ${p.invalid}</small></div></div>`).join("")}
     ${r.totals.issues.length ? `<p style="color:#c0392b"><b>Integrity notes:</b> ${r.totals.issues.map(esc).join(" ")}</p>` : ""}
     <div class="sig"><div>Election officer</div><div>Headteacher</div><div>Date</div></div>

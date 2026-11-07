@@ -257,7 +257,7 @@ async function showPublishedResults() {
     host.innerHTML = `<h2 style="font-family:Georgia,serif;color:var(--navy)">Official results</h2>` + r.positions.map((p) => `
       <div class="card res-card"><h3>${esc(p.title)}</h3>
       ${p.status === "tie" ? `<div class="alert warn">Tie &mdash; the school will announce how it is resolved.</div>` : ""}
-      <div class="chart">${p.candidates.map((c) => `<div class="crow ${p.winners.some((w) => w.id === c.id) ? "win" : ""}"><span>${esc(c.name)}</span><div class="track"><div class="fill" style="width:${c.pct}%"></div></div><span class="v">${c.pct}%</span></div>`).join("")}</div>
+      <div class="chart">${p.candidates.map((c) => `<div class="crow ${p.winners.some((w) => w.id === c.id) ? "win" : ""}"><span>${p.status !== "no-votes" && !p.winners.some((w) => w.id === c.id) && !p.tied.some((t) => t.id === c.id) ? "\u{1F6B2} " : ""}${esc(c.name)}</span><div class="track"><div class="fill" style="width:${c.pct}%"></div></div><span class="v">${c.pct}%</span></div>`).join("")}</div>
       <div class="hint">Winner${p.winners.length > 1 ? "s" : ""}: ${p.winners.length ? p.winners.map((w) => esc(w.name)).join(", ") : "—"}</div></div>`).join("");
   } catch (ex) {
     host.innerHTML = `<div class="alert info">Results are not available.</div>`;
