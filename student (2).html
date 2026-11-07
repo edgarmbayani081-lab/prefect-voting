@@ -19,10 +19,12 @@
   <!-- LOGIN (name only: voting is supervised) -->
   <section id="loginView" class="card narrow">
     <h3>Student Login</h3>
-    <p class="hint">Type your full name exactly as it appears on the school register. Your supervisor is present while you vote.</p>
+    <p class="hint">Type your name exactly as it appears on the school register, then your class. Your supervisor is present while you vote.</p>
     <form id="loginForm" autocomplete="off">
-      <label for="studentName">Your full name</label>
-      <input id="studentName" type="text" placeholder="e.g. Grace Banda" autocapitalize="words" autocorrect="off" spellcheck="false" required>
+      <label for="studentName">Your name</label>
+      <input id="studentName" type="text" placeholder="e.g. E.SAMUEL" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
+      <label for="studentClass">Your class</label>
+      <input id="studentClass" type="text" placeholder="e.g. FORM 2" autocapitalize="characters" autocorrect="off" spellcheck="false" required>
       <div id="loginErr" class="alert bad" hidden></div>
       <button class="btn btn-gold btn-block" id="loginBtn" style="margin-top:16px">Continue</button>
     </form>

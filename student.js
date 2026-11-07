@@ -2,7 +2,7 @@ import {
   auth, db, isConfigured, signInWithEmailAndPassword, signOut, onAuthStateChanged,
   doc, getDoc, getDocs, collection, writeBatch,
 } from "./firebase.js";
-import { POSITIONS, seatsFor, DINING_SEATS } from "./constants.js";
+import { POSITIONS } from "./constants.js";
 import { $, esc, codeToEmail, loginPassword, initials, toast } from "./util.js";
 
 const S = { user: null, voter: null, settings: null, cands: {}, sel: {}, busy: false };
@@ -23,12 +23,13 @@ $("#loginForm").addEventListener("submit", async (e) => {
   err.hidden = true;
   $("#loginBtn").disabled = true;
   try {
-    await signInWithEmailAndPassword(auth, codeToEmail($("#code").value), loginPassword($("#pw").value));
+    // Name only (e.g. E.SAMUEL) + class (e.g. FORM 2). Case and extra spaces do not matter.
+    await signInWithEmailAndPassword(auth, codeToEmail($("#studentName").value), loginPassword($("#studentClass").value));
   } catch (ex) {
     err.hidden = false;
     err.textContent = ["auth/too-many-requests"].includes(ex.code)
       ? "Too many attempts. Please wait a few minutes and try again."
-      : "Login failed. Check your Voter Code and your class.";
+      : "Login failed. Check that your name is spelled as on the register (e.g. E.SAMUEL) and your class is correct (e.g. FORM 2). If it still fails, ask your supervisor.";
   } finally {
     $("#loginBtn").disabled = false;
   }
@@ -75,9 +76,9 @@ async function loadAll() {
 
 /* ------------------------------ portal ------------------------------ */
 function cfg(id) {
-  if (id !== "dining") return { seats: seatsFor(id), max: 1 };
+  if (id !== "dining") return { seats: 1, max: 1 };
   const c = S.settings.positions?.dining || {};
-  const seats = parseInt(c.seats, 10) || DINING_SEATS;
+  const seats = parseInt(c.seats, 10) || 2;
   return { seats, max: parseInt(c.maxSelect, 10) || seats };
 }
 const voted = (id) => !!S.voter?.voted?.[id];
@@ -120,7 +121,7 @@ function renderPositions() {
   host.innerHTML = POSITIONS.map((p, i) => {
     const { max, seats } = cfg(p.id);
     const items = S.cands[p.id] || [];
-    const meta = p.id === "dining" ? `${seats} position${seats > 1 ? "s" : ""} available &middot; choose up to ${max}` : seats > 1 ? `Choose one candidate &middot; the top ${seats} win` : "Choose one candidate";
+    const meta = p.id === "dining" ? `${seats} position${seats > 1 ? "s" : ""} available &middot; choose up to ${max}` : "Choose one candidate";
     let body;
     if (voted(p.id)) {
       body = `<div class="lockbox">&#10003; Your vote for this position has been recorded.</div>`;
@@ -257,7 +258,7 @@ async function showPublishedResults() {
     host.innerHTML = `<h2 style="font-family:Georgia,serif;color:var(--navy)">Official results</h2>` + r.positions.map((p) => `
       <div class="card res-card"><h3>${esc(p.title)}</h3>
       ${p.status === "tie" ? `<div class="alert warn">Tie &mdash; the school will announce how it is resolved.</div>` : ""}
-      <div class="chart">${p.candidates.map((c) => `<div class="crow ${p.winners.some((w) => w.id === c.id) ? "win" : ""}"><span>${p.status !== "no-votes" && !p.winners.some((w) => w.id === c.id) && !p.tied.some((t) => t.id === c.id) ? "\u{1F6B2} " : ""}${esc(c.name)}</span><div class="track"><div class="fill" style="width:${c.pct}%"></div></div><span class="v">${c.pct}%</span></div>`).join("")}</div>
+      <div class="chart">${p.candidates.map((c) => `<div class="crow ${p.winners.some((w) => w.id === c.id) ? "win" : ""}"><span>${esc(c.name)}</span><div class="track"><div class="fill" style="width:${c.pct}%"></div></div><span class="v">${c.pct}%</span></div>`).join("")}</div>
       <div class="hint">Winner${p.winners.length > 1 ? "s" : ""}: ${p.winners.length ? p.winners.map((w) => esc(w.name)).join(", ") : "—"}</div></div>`).join("");
   } catch (ex) {
     host.innerHTML = `<div class="alert info">Results are not available.</div>`;
